@@ -11,6 +11,7 @@
 // constants in this file will be defined in inches.  The mm function
 // allows us to retain the proper size for exporting a metric STL.
 function mm(i) = i*25.4;
+$fn=100;
 
 module rounded(size, r) {
     union() {
@@ -19,13 +20,8 @@ module rounded(size, r) {
         translate([r, r, 0]) cylinder(h=size[2], r=r);
         translate([size[0]-r, r, 0]) cylinder(h=size[2], r=r);
         translate([r, size[1]-r, 0]) cylinder(h=size[2], r=(r));
-    }
-	difference() {
-	    translate([size[0]-r, size[1]-r, 0]) cylinder(h=size[2], r=r);
-       translate([size[0]-r + mm(.45), size[1]-r + mm(.303), 0]) sphere(8);
-     // translate([size[0]-r+mm(.1), size[1]-r + mm(.56), 0]) sphere(8);
-     // translate([size[0]-r+mm(.29), size[1]-r + mm(.475), 0]) sphere(9);
-	}
+        translate([size[0]-r, size[1]-r, 0]) cylinder(h=size[2], r=r);
+	  }
 }
 
 module bit() {
@@ -62,7 +58,12 @@ module kw1(bits) {
     difference() {
         // blade and key handle
         union() {
-            translate([-h_l, -h_w/2 + width/2, 0]) rounded([h_l, h_w, thickness], mm(1/3));
+            translate([-h_l, -h_w/2 + width/2, 0])  difference() {
+                rounded([h_l, h_w, thickness], mm(1/3));
+                // Round out edge of bow to blade            
+                translate([h_l, h_w/2 + width/2 + 8, 0]) cylinder(h=thickness, r=8);
+		       }
+
             // cut a little off the tip to avoid going too long
             cube([length, width, thickness]);
         }
