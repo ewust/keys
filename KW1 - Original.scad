@@ -1,4 +1,4 @@
-// Physical Keygen - by Nirav Patel <http://eclecti.cc>
+
 //
 // Generate a duplicate of a Kwikset KW1 key by editing the last line of the file
 // and entering in the key code of the lock.  If you don't know the key code,
@@ -14,13 +14,17 @@ function mm(i) = i*25.4;
 $fn=100;
 
 module rounded(size, r) {
+	 
     union() {
-        translate([r, 0, 0]) cube([size[0]-2*r, size[1], size[2]]);
-        translate([0, r, 0]) cube([size[0], size[1]-2*r, size[2]]);
+	
+     *   translate([r, 0, 0]) cube([size[0]-2*r, size[1], size[2]]);
+       translate([0, r, 0]) cube([size[0], size[1]-2*r, size[2]]);
         translate([r, r, 0]) cylinder(h=size[2], r=r);
-        translate([size[0]-r, r, 0]) cylinder(h=size[2], r=r);
+        translate([size[0]-r, r, 0]) cylinder(h=size[2], r=(r+.5));
         translate([r, size[1]-r, 0]) cylinder(h=size[2], r=(r));
         translate([size[0]-r, size[1]-r, 0]) cylinder(h=size[2], r=r);
+		translate([(mm(1))/2, mm(.205) + ((mm(1))/2), 0]) cylinder(h= size[2], r=r);
+		translate([(mm(1))/2, mm(.287), 0]) cylinder(h= size[2], r=r);
 	  }
 }
 
@@ -37,7 +41,7 @@ module bit() {
 // engineering some keys I have and some publicly available information.
 module kw1(bits) {
     // You may need to adjust these to fit your specific printer settings
-     thickness = mm(0.080);
+    thickness = mm(0.080);
     length = mm(9/8);
     width = mm(.337);
     
@@ -62,6 +66,12 @@ module kw1(bits) {
                 rounded([h_l, h_w, thickness], mm(1/3));
                 // Round out edge of bow to blade            
                 translate([h_l, h_w/2 + width/2 + 8, 0]) cylinder(h=thickness, r=8);
+                translate([h_l, h_w/2 - width/2 - 9 , 0]) cylinder(h=thickness, r=8);
+			   translate([(5*h_l)/8, -3, 0])  cube([2*thickness, 2*thickness, thickness]);
+			   translate([(5*h_l)/8, 3 + width + ( h_l/2), 0])  cube([2*thickness, 2*thickness, thickness]);
+			     *  translate([(9*h_l)/30, 3 + width + ( h_l/2), 0])  cube([(2*thickness)/3, 2*thickness, thickness]);
+                translate([0 , h_w/2 + width/2 + 8, 0]) cylinder(h=thickness, r=8);
+                translate([0, h_w/2 - width/2 - 9 , 0]) cylinder(h=thickness, r=8);
 		       }
 
             // cut a little off the tip to avoid going too long
@@ -105,4 +115,4 @@ module kw1(bits) {
 
 // This sample key goes to a lock that is sitting disassembled on my desk
 // Flip the key over for easy printing
-kw1([1,4,4,1,1]);
+kw1([9, 9, 9, 9, 9]);
