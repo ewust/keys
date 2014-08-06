@@ -52,7 +52,7 @@ module bit()
 		translate([-w/2, 0, 0]) cube([w, mm(1), w]);
 		translate([-mm(7/256), 0, 0]) rotate([0, 0, 135]) cube([w, w, w]);
 		translate([mm(7/256), 0, 0]) rotate([0, 0, -45]) cube([w, w, w]);
-	}
+}
 }
 
 module blade(blade_length, blade_width, blade_thickness, key_cuts, shoulder, cut_spacing, cut_depth)
@@ -61,23 +61,21 @@ module blade(blade_length, blade_width, blade_thickness, key_cuts, shoulder, cut
 	{
 		cube([blade_length, blade_width, blade_thickness]);
 
-		//Contour tip		
+		//Contour tip		 
 		translate([blade_length, mm(1/8), 0]) {
 			rotate([0, 0, 34]) cube([10, 10, blade_thickness]);
 		}
 
 		//Tip stop
-		translate([blade_length - mm(.106), 0, 0]) {
-			cube([mm(.106), mm(.08), blade_thickness]);
+		translate([blade_length - mm(.06), 0, 0]) {
+			cube([mm(.09877), mm(.0601), blade_thickness]);
 		}
 		
 		//Cut the key channels
 		union() 
 		{	
-			translate([0, mm(.105), mm(.025)]) rotate([225, 0, 0]) cube([blade_length, blade_width, blade_width]);
-			translate([0, mm(.105), mm(.05)]) rotate([260, 0, 0]) cube([blade_length, blade_thickness / 2, mm(1/32)]);
-			translate([0, mm(.105), 0]) cube([blade_length, mm(7/128), mm(.05)]);
-			translate([0, mm(.105) + mm(7/128), mm(.05)]) rotate([225, 0, 0]) cube([blade_length, mm(3/64), blade_thickness]);
+			translate([0, mm(.105), 0]) cube([blade_length, mm(5/128), mm(.045)]);
+			translate([0, mm(.14), mm(.05)]) rotate([230, 0, 0]) cube([blade_length, mm(8/64), blade_thickness]);
 		}
         
 		translate([0, blade_width - mm(9/64), mm(.043)]) 
@@ -87,14 +85,14 @@ module blade(blade_length, blade_width, blade_thickness, key_cuts, shoulder, cut
 		}
         
 		union() {
-			translate([0, mm(0.015), mm(.03)]) cube([blade_length, mm(.041), blade_thickness]);
+			translate([0, mm(0.025), mm(.05)]) cube([blade_length, mm(.041), blade_thickness]);
 			translate([0, mm(0.015) + mm(13/256), blade_thickness - mm(1/64)]) rotate([45, 0, 0]) cube([blade_length, mm(1/16), mm(1/16)]);
 		}
 
 		//Cut the blade
 		for (counter = [0:6]) 
 		{
-			translate([shoulder + (counter * cut_spacing), blade_width - (key_cuts[counter]) * cut_depth, 0]) bit();
+			translate([shoulder + (counter * cut_spacing) + .5, blade_width - (key_cuts[counter]) * cut_depth - .5, 0]) bit();
 		}
 	}
 }
@@ -103,7 +101,7 @@ module best_g(key_cuts)
 {
 	blade_length = mm(1.269);
 	blade_width = mm(.318);
-	blade_thickness = mm(0.080);
+	blade_thickness = mm(0.075);
 
 	shoulder = mm(0.2);
 	cut_spacing = mm(.15);
@@ -116,7 +114,7 @@ module best_g(key_cuts)
 	union()
 	{
 		bow(bow_length, bow_width, bow_thickness); 
-		translate([bow_length, bow_width - blade_width - 9, 0]) blade(blade_length, blade_width, bow_thickness, key_cuts, shoulder, cut_spacing, cut_depth);
+		translate([bow_length, bow_width - blade_width - 9, 0]) blade(blade_length, blade_width, blade_thickness, key_cuts, shoulder, cut_spacing, cut_depth);
 	}
 }
 
