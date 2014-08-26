@@ -1,4 +1,4 @@
-//BEST G - Model
+//Medeco Biaxial
 
 $fn=100;
 
