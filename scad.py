@@ -19,7 +19,6 @@ img = cv2.imread(sys.argv[1], 0)
 #2.37 measured wide
 
 whitepxs = 0
-            
 
 FMT = '''       translate([0, pixel(%d), pixel(%d)]) cube([blade_length, pixel(1), pixel(1)]);\n'''
 
@@ -42,7 +41,7 @@ for y in xrange(len(img)):
             # out of keyway
             whitepxs += 1
 
-            channels += (FMT % (y, x))
+            channels += (FMT % (len(img)-y, x))
 
 
 
