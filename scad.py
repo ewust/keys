@@ -18,33 +18,24 @@ img = cv2.imread(sys.argv[1], 0)
 #8.19 measured tall
 #2.37 measured wide
 
-whitepxs = 0
 
-FMT = '''       translate([0, pixel(%d), pixel(%d)]) cube([blade_length, pixel(1), pixel(1)]);\n'''
+FMT = '''       translate([0, pixel(%d)-pixel(1)/2, pixel(%d)-pixel(%d)/2]) cube([blade_length, pixel(1.05), pixel(%d)]);\n'''
 
 channels = ''
 for y in xrange(len(img)):
     state = 'OUT'  # white/out of keyway
+    last_black_to_white_change = 0
     for x in xrange(len(img[y])):
-
-
-#        if img[y][x] < 127:
-#            # this is in the keyway
-#            if state == 'OUT':
-#                # create a difference cube for this row
-#
-#        else:
-#            # this is out of the keyway'''
-#
-
+        if img[y][x] < 127:
+            if img[y][x-1] > 127:
+            	channels += (FMT % (len(img) - y, ((x - last_black_to_white_change)/2)+last_black_to_white_change, x - last_black_to_white_change, x - last_black_to_white_change))
         if img[y][x] > 127:
-            # out of keyway
-            whitepxs += 1
-
-            channels += (FMT % (len(img)-y, x))
+            if img[y][x-1] < 127:
+                last_black_to_white_change = x-1
+        if x + 1 == len(img[y]):
+        		if(img[y][x] > 127):
+        			channels += (FMT % (len(img) - y, ((x+1 - last_black_to_white_change)/2)+last_black_to_white_change, x +1 - last_black_to_white_change, x +1 - last_black_to_white_change))            
 
 
 
 print generic_scad.replace('###CHANNELS###', channels)
-
-
