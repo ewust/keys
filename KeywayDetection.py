@@ -99,20 +99,20 @@ if (args.overhangs == True):
 	for y in range(0, len(cv_image)):
 		for x in range(0, len(cv_image[y])):
 			if(cv_image[y][x] > 127 and x-1 >= 0 and cv_image[y][x-1] < 127):
-						last_black_pixel_x_position = x - 1
+				last_black_pixel_x_position = x - 1
 			if(cv_image[y][x] < 127 and x-1 >= 0 and cv_image[y][x-1] > 127):	
-						length_of_white_segment = (x - 1)- last_black_pixel_x_position
-						end_point = x - 1 
-						print (FMT % (last_black_pixel_x_position, y, length_of_white_segment))
+				length_of_white_segment = (x - 1)- last_black_pixel_x_position
+				end_point = x - 1 
+				print (FMT % (last_black_pixel_x_position, y, length_of_white_segment))
 else:
 	for y in range(0, len(cv_image)):
 		for x in range(0, len(cv_image[y])):
 			if(cv_image[y][x] > 127 and x-1 >= 0 and cv_image[y][x-1] < 127):
-						last_black_pixel_x_position = x - 1
+				last_black_pixel_x_position = x - 1
 		for x in range(len(cv_image[y]), 0):
 			if(cv_image[y][x] > 127 and x + 1 <= len(cv_image[y]) and cv_image[y][x+1] < 127):
-						length_of_white_segment = x - last_black_pixel_x_position
-						end_point = x
+				length_of_white_segment = x - last_black_pixel_x_position
+				end_point = x
 		print(FMT % (last_black_pixel_x_position, y, length_of_white_segment))
 print channels
 print generic_scad.replace('###CHANNELS###', channels)
