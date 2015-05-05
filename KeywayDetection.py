@@ -56,7 +56,6 @@ if(args.threshold == -1):
 	for threshold in range(args.min_threshold, args.max_threshold, args.step_size_threshold):
 		ret,new_img = cv2.threshold(img,threshold,255,cv2.THRESH_BINARY)
 		labels = measure.label(new_img)
-		x_array.append(threshold)
 		max = 0
 		region_label = -1
 		region_image = []
@@ -65,7 +64,6 @@ if(args.threshold == -1):
 				max = region.area
 				region_label = region.label
 				region_image = region.filled_image
-		y_array.append(len(region_image)*len(region_image[1]))
 		if(first_run):
 			last_area = len(region_image)*len(region_image[1])
 			first_run = False
@@ -94,22 +92,27 @@ else:
 
 	cv_image = img_as_ubyte(region_image)
 	cv2.imwrite(args.output, cv_image)
+FMT = ''' translate([0, pixel(%d), pixel(%d)]) cube([blade_length, pixel(1), pixel(%d)]);\n'''
+channels = []
+length_of_white_segment = 0
 if (args.overhangs == True):
 	for y in range(0, len(cv_image)):
 		for x in range(0, len(cv_image[y])):
-			if(img[y][x] > 127 and x-1 >= 0 and img[y][x-1] < 127):
+			if(cv_image[y][x] > 127 and x-1 >= 0 and cv_image[y][x-1] < 127):
 						last_black_pixel_x_position = x - 1
-			if(img[y][x] < 127 and x-1 >= 0 and img[y][x-1] > 127):	
+			if(cv_image[y][x] < 127 and x-1 >= 0 and cv_image[y][x-1] > 127):	
 						length_of_white_segment = (x - 1)- last_black_pixel_x_position
 						end_point = x - 1 
-						#SOME CHANNEL MATH
+						print (FMT % (last_black_pixel_x_position, y, length_of_white_segment))
 else:
 	for y in range(0, len(cv_image)):
 		for x in range(0, len(cv_image[y])):
-			if(img[y][x] > 127 and x-1 >= 0 and img[y][x-1] < 127):
+			if(cv_image[y][x] > 127 and x-1 >= 0 and cv_image[y][x-1] < 127):
 						last_black_pixel_x_position = x - 1
 		for x in range(len(cv_image[y]), 0):
-			if(img[y][x] > 127 and x + 1 <= len(cv_image[y]) and img[y][x+1] < 127):
+			if(cv_image[y][x] > 127 and x + 1 <= len(cv_image[y]) and cv_image[y][x+1] < 127):
 						length_of_white_segment = x - last_black_pixel_x_position
 						end_point = x
-		#SOME CHANNEL MATH
+		print(FMT % (last_black_pixel_x_position, y, length_of_white_segment))
+print channels
+print generic_scad.replace('###CHANNELS###', channels)
