@@ -45,7 +45,6 @@ if(os.path.isfile(args.generic_scad) == False):
 	print 'Error: generic_scad file does not exist'
 	sys.exit(1)
 #END ARG CHECKING
-
 f = open(args.generic_scad, 'r')
 generic_scad = f.read()
 f.close()
@@ -98,27 +97,19 @@ else:
 if (args.overhangs == True):
 	for y in range(0, len(cv_image)):
 		for x in range(0, len(cv_image[y])):
-			if(img[y][x] > 127):
-				if(x-1 >= 0):
-					if(img[y][x-1] < 127):
+			if(img[y][x] > 127 and x-1 >= 0 andimg[y][x-1] < 127):
 						last_black_pixel_x_position = x - 1
-			if(img[y][x] < 127):
-				if(x-1 >= 0):
-					if(img[y][x-1] > 127):	
+			if(img[y][x] < 127 and x-1 >= 0 and img[y][x-1] > 127):	
 						length_of_white_segment = (x - 1)- last_black_pixel_x_position
 						end_point = x - 1 
 						#SOME CHANNEL MATH
 else:
 	for y in range(0, len(cv_image)):
 		for x in range(0, len(cv_image[y])):
-			if(img[y][x] > 127):
-				if(x-1 >= 0):
-					if(img[y][x-1] < 127):
+			if(img[y][x] > 127 and x-1 >= 0 and img[y][x-1] < 127):
 						last_black_pixel_x_position = x - 1
 		for x in range(len(cv_image[y]), 0):
-			if(img[y][x] > 127):
-				if(x + 1 <= len(cv_image[y])):
-					if(img[y][x+1] < 127):
+			if(img[y][x] > 127 and x + 1 <= len(cv_image[y]) and img[y][x+1] < 127):
 						length_of_white_segment = x - last_black_pixel_x_position
 						end_point = x
 		#SOME CHANNEL MATH
