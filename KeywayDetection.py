@@ -97,7 +97,7 @@ else:
 if (args.overhangs == True):
 	for y in range(0, len(cv_image)):
 		for x in range(0, len(cv_image[y])):
-			if(img[y][x] > 127 and x-1 >= 0 andimg[y][x-1] < 127):
+			if(img[y][x] > 127 and x-1 >= 0 and img[y][x-1] < 127):
 						last_black_pixel_x_position = x - 1
 			if(img[y][x] < 127 and x-1 >= 0 and img[y][x-1] > 127):	
 						length_of_white_segment = (x - 1)- last_black_pixel_x_position
