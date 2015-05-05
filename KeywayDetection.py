@@ -49,8 +49,6 @@ if(os.path.isfile(args.generic_scad) == False):
 f = open(args.generic_scad, 'r')
 generic_scad = f.read()
 f.close()
-x_array = []
-y_array = []
 img = cv2.imread(args.input, 0)
 new_img = cv2.imread(args.input, 0)
 first_run = True
