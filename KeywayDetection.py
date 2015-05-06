@@ -23,27 +23,31 @@ parser.add_argument('--overhangs', '-oh', default=True, type=bool,
 					help='set if the image has overhangs (default: True)')
 parser.add_argument('--generic_scad', '-gs', default='generic-key.scad', 
 					help='set the location of the generic-key.scad file (default: ./generic-key.scad)')
+parser.add_argument('--no_arg', '-na', default=False, type=bool, 
+					help='disable argument checking (default: False)')
 args = parser.parse_args()
+args.overhangs = False
 #START ARG CHECKING
-if((args.threshold > 255) | ((args.threshold < 0) and (args.threshold != -1)) | 
-	(args.min_threshold > 255) | (args.min_threshold < 0) | 
-	(args.max_threshold > 255) | (args.max_threshold < 0) | 
-	(args.step_size_threshold > (args.max_threshold - args.min_threshold)) | 
-	(args.min_threshold > args.max_threshold)):
-	print 'Error: threshold value out of range'
-	sys.exit(1)
-if(os.path.isfile(args.input) == False):
-	print 'Error: input file does not exist'
-	sys.exit(1)
-if(os.path.isfile(args.output) == True):
-	print 'Warning: output file exists'
-	print 'Would you like to overwrite? (y/n)'
-	input_data = raw_input()
-	if((input_data == 'y') | (input_data == 'yes')) == False:
+if(args.no_arg == False):
+	if((args.threshold > 255) | ((args.threshold < 0) and (args.threshold != -1)) | 
+		(args.min_threshold > 255) | (args.min_threshold < 0) | 
+		(args.max_threshold > 255) | (args.max_threshold < 0) | 
+		(args.step_size_threshold > (args.max_threshold - args.min_threshold)) | 
+		(args.min_threshold > args.max_threshold)):
+		print 'Error: threshold value out of range'
 		sys.exit(1)
-if(os.path.isfile(args.generic_scad) == False):
-	print 'Error: generic_scad file does not exist'
-	sys.exit(1)
+	if(os.path.isfile(args.input) == False):
+		print 'Error: input file does not exist'
+		sys.exit(1)
+	if(os.path.isfile(args.output) == True):
+		print 'Warning: output file exists'
+		print 'Would you like to overwrite? (y/n)'
+		input_data = raw_input()
+		if((input_data == 'y') | (input_data == 'yes')) == False:
+			sys.exit(1)
+	if(os.path.isfile(args.generic_scad) == False):
+		print 'Error: generic_scad file does not exist'
+		sys.exit(1)
 #END ARG CHECKING
 f = open(args.generic_scad, 'r')
 generic_scad = f.read()
@@ -92,27 +96,54 @@ else:
 
 	cv_image = img_as_ubyte(region_image)
 	cv2.imwrite(args.output, cv_image)
-FMT = ''' translate([0, pixel(%d), pixel(%d)]) cube([blade_length, pixel(1), pixel(%d)]);\n'''
-channels = []
+FMT = ''' translate([pixel(%d), pixel(%d), 0]) cube([pixel(%d), pixel(%d), blade_length]);\n'''
+channels = ''
 length_of_white_segment = 0
+last_black_pixel_x_position = 0
+if (args.overhangs == False):
+	for y in range(0, len(cv_image)):
+		first_wall_found = False
+		for x in range(0, len(cv_image[y])):
+			if(cv_image[y][x] < 127 and x + 1 < len(cv_image[y]) 
+				and cv_image[y][x+1] > 127 and first_wall_found == False):
+				last_black_pixel_x_position = x
+				first_wall_found = True
+			if(cv_image[y][x] and x == 0  and first_wall_found == False):
+				last_black_pixel_x_position = 0
+				first_wall_found = True
+			if ((cv_image[y][x] > 127 and x + 1 < len(cv_image[y]) and cv_image[y][x+1] < 127) or
+				(cv_image[y][x] > 127 and x + 1 == len(cv_image[y]))):
+				length_of_white_segment = x - last_black_pixel_x_position
+				length_of_white_segment = x - last_black_pixel_x_position	
+				channels += (FMT % (last_black_pixel_x_position, y, length_of_white_segment, 1))
 if (args.overhangs == True):
 	for y in range(0, len(cv_image)):
 		for x in range(0, len(cv_image[y])):
-			if(cv_image[y][x] > 127 and x-1 >= 0 and cv_image[y][x-1] < 127):
-				last_black_pixel_x_position = x - 1
-			if(cv_image[y][x] < 127 and x-1 >= 0 and cv_image[y][x-1] > 127):	
-				length_of_white_segment = (x - 1)- last_black_pixel_x_position
-				end_point = x - 1 
-				print (FMT % (last_black_pixel_x_position, y, length_of_white_segment))
-else:
-	for y in range(0, len(cv_image)):
-		for x in range(0, len(cv_image[y])):
-			if(cv_image[y][x] > 127 and x-1 >= 0 and cv_image[y][x-1] < 127):
-				last_black_pixel_x_position = x - 1
-		for x in range(len(cv_image[y]), 0):
-			if(cv_image[y][x] > 127 and x + 1 <= len(cv_image[y]) and cv_image[y][x+1] < 127):
+			if(cv_image[y][x] < 127 and x + 1 < len(cv_image[y]) and cv_image[y][x+1] > 127):
+				last_black_pixel_x_position = x
+			if(cv_image[y][x] and x == 0):
+				last_black_pixel_x_position = 0
+			if((cv_image[y][x] > 127 and x + 1 < len(cv_image[y]) and cv_image[y][x+1] < 127) or
+				(cv_image[y][x] > 127 and x + 1 == len(cv_image[y]))):
 				length_of_white_segment = x - last_black_pixel_x_position
-				end_point = x
-		print(FMT % (last_black_pixel_x_position, y, length_of_white_segment))
-print channels
+				channels += (FMT % (last_black_pixel_x_position, y, length_of_white_segment, 1))
+	
+#for y in range(0, len(cv_image)):
+#	if(y + 1 != len(cv_image)):
+#		if(len_of_white[y] == len_of_white[y + 1] and
+#			bpix[y] == bpix[y + 1]):
+#			for i in range(1, len(cv_image)):
+#				if(len_of_white[y] == len_of_white[y + i] and
+#					bpix[y] == bpix[y + i]):
+#					yheight[y] += 1
+#				else:
+#					channels += (FMT % (bpix[y], ypos[y], len_of_white[y], yheight[y]))
+#					y += i
+#					break
+#		else:
+#			channels += (FMT % (bpix[y], y, len_of_white[y], yheight[y]))
+#	else:
+#		channels += (FMT % (bpix[y], y, len_of_white[y], yheight[y]))
+
+#print channels[1]
 print generic_scad.replace('###CHANNELS###', channels)
