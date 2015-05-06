@@ -25,10 +25,9 @@ parser.add_argument('--generic_scad', '-gs', default='generic-key.scad',
 					help='set the location of the generic-key.scad file (default: ./generic-key.scad)')
 parser.add_argument('--no_arg', '-na', default=False, type=bool, 
 					help='disable argument checking (default: False)')
-parser.add_argument('--optimize', '-opt', default=False, type=bool, 
-					help='enable y direction optimization (default: False)')
+parser.add_argument('--optimize', '-opt', default=True, type=bool, 
+					help='enable y direction optimization (default: True)')
 args = parser.parse_args()
-args.overhangs = True
 #START ARG CHECKING
 if(args.no_arg == False):
 	if((args.threshold > 255) | ((args.threshold < 0) and (args.threshold != -1)) | 
@@ -118,10 +117,10 @@ if (args.overhangs == False):
 			if ((cv_image[y][x] > 127 and x + 1 < len(cv_image[y]) and cv_image[y][x+1] < 127) or
 				(cv_image[y][x] > 127 and x + 1 == len(cv_image[y]))):
 				length_of_white_segment = x - last_black_pixel_x_position	
-				channel_data.append([last_black_pixel_x_position, y, length_of_white_segment, 1])
+				channel_data.append([last_black_pixel_x_position, y, length_of_white_segment, 1, -1])
 				num_elems += 1
 				if(args.optimize == False):
-					channels += (FMT % (last_black_pixel_x_position, y, length_of_white_segment, 1))
+					channels += (FMT % (last_black_pixel_x_position, y, length_of_white_segment, 1, -1))
 if (args.overhangs == True):
 	for y in range(0, len(cv_image)):
 		for x in range(0, len(cv_image[y])):
@@ -132,30 +131,40 @@ if (args.overhangs == True):
 			if((cv_image[y][x] > 127 and x + 1 < len(cv_image[y]) and cv_image[y][x+1] < 127) or
 				(cv_image[y][x] > 127 and x + 1 == len(cv_image[y]))):
 				length_of_white_segment = x - last_black_pixel_x_position
-				channel_data.append([last_black_pixel_x_position, y, length_of_white_segment, 1])
+				channel_data.append([last_black_pixel_x_position, y, length_of_white_segment, 1, -1])
 				num_elems += 1
 				if(args.optimize == False):
-					channels += (FMT % (last_black_pixel_x_position, y, length_of_white_segment, 1))
+					channels += (FMT % (last_black_pixel_x_position, y, length_of_white_segment, 1, -1))
 if(args.optimize == True):
-	i = 0;
-	for x in range(0, num_elems-1):
-		if(channel_data[i][1] >= len(cv_image)):
-			break
-		counter = 1
-		if(i + 1 < num_elems):
-			if((channel_data[i][0] != channel_data[i + 1][0]) or 
-				(channel_data[i][2] != channel_data[i + 1][2])):
-				channels += (FMT % (channel_data[i][0], channel_data[i][1], channel_data[i][2], counter))
+	channel_data_classifier = 1
+	for i in range(0, len(channel_data)):
+		if(i - 1 >= 0):	
+			if((channel_data[i-1][0] == channel_data[i][0]) and
+				channel_data[i-1][2] == channel_data[i][2]):
+				channel_data[i][4] = channel_data[i-1][4]
 			else:
-				for j in range(1, len(cv_image) - i):
-					if((channel_data[i][0] == channel_data[i + j][0]) and 
-					(channel_data[i][2] == channel_data[i + j][2])):
-						counter += 1
-					else:
-						channels += (FMT % (channel_data[i][0], channel_data[i][1], channel_data[i][2], counter))
-						i = i + j - 1
-						break
+				channel_data[i][4] = channel_data_classifier
+				channel_data_classifier += 1
 		else:
-			break
-		i += 1
+			channel_data[i][4] = channel_data_classifier
+			channel_data_classifier += 1
+	max_channel = channel_data_classifier
+	channel_data_classifier = 1
+	data_stor = [0, 0, 0, 0]
+	last_index = 0
+	first_index = 0
+	first_j = False
+	for i in range(channel_data_classifier, max_channel):
+		counter = 0
+		first_j = False
+		for j in range(last_index, len(channel_data)):
+			if(channel_data[j][4] == i):
+				if(first_j == False):
+					first_index = j
+					first_j = True
+				counter += 1
+			else:
+				last_index = j
+				break
+		channels += (FMT % (channel_data[first_index][0], channel_data[first_index][1], channel_data[first_index][2], counter))
 print generic_scad.replace('###CHANNELS###', channels)
