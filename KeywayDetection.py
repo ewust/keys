@@ -8,7 +8,7 @@ parser = argparse.ArgumentParser(description='3D Key Blank Model Generation Util
 parser.add_argument('input', default = 'input.pgm', 
 					help='the file to read from (default: input.pgm)')
 parser.add_argument('--output', '-o', default='output.pgm', 
-					help='the file to output to (default: output.pgm)')
+					help='the file to output the image mask to (default: output.pgm)')
 parser.add_argument('--threshold', '-t', default=-1, type=float, 
 					help='the threshold value to use when filtering the image (default: automatically generated)')
 parser.add_argument('--min_threshold', default=25, type=int,
@@ -19,15 +19,20 @@ parser.add_argument('--step_size_threshold', default=5, type=int,
 					help='set the step size for the automated threshold detector (default: 5)')
 parser.add_argument('--print_threshold', '-pt', default=False, type=bool,
 					help='print the automatically selected threshold value (default: False)')
-parser.add_argument('--overhangs', '-oh', default=True, type=bool, 
+parser.add_argument('--overhangs', '-oh', default=1, type=int, 
 					help='set if the image has overhangs (default: True)')
 parser.add_argument('--generic_scad', '-gs', default='generic-key.scad', 
 					help='set the location of the generic-key.scad file (default: ./generic-key.scad)')
 parser.add_argument('--no_arg', '-na', default=False, type=bool, 
 					help='disable argument checking (default: False)')
-parser.add_argument('--optimize', '-opt', default=True, type=bool, 
-					help='enable y direction optimization (default: True)')
+parser.add_argument('--keyway_height', '-kh', default=.320, type=float, 
+					help='set the height of the keyway in inches (default: .320")')
+parser.add_argument('--blade_length', '-bl', default=1.25, type=float, 
+					help='set the length of the key blade in inches (default: 1.25")')
+parser.add_argument('--scad_output_file', '-sof', default='output.scad',  
+					help='the file to output the OpenSCAD data to (default: output.scad)')
 args = parser.parse_args()
+args.optimize = 1
 #START ARG CHECKING
 if(args.no_arg == False):
 	if((args.threshold > 255) | ((args.threshold < 0) and (args.threshold != -1)) | 
@@ -50,14 +55,21 @@ if(args.no_arg == False):
 		print 'Error: generic_scad file does not exist'
 		sys.exit(1)
 #END ARG CHECKING
-f = open(args.generic_scad, 'r')
+
+#READ GENERIC SCAD TEMPLATE
+print "Reading Generic SCAD Template"
+f = open(args.generic_scad, 'r+')
 generic_scad = f.read()
 f.close()
+#END READ GENERIC SCAD TEMPLATE
+
+#THRESHOLDING
 img = cv2.imread(args.input, 0)
 new_img = cv2.imread(args.input, 0)
 first_run = True
 last_area = 0
 if(args.threshold == -1):
+	print "Determining Optimal Thresholding Value"
 	for threshold in range(args.min_threshold, args.max_threshold, args.step_size_threshold):
 		ret,new_img = cv2.threshold(img,threshold,255,cv2.THRESH_BINARY)
 		labels = measure.label(new_img)
@@ -80,10 +92,12 @@ if(args.threshold == -1):
 		cv2.imwrite(args.output, cv_image)
 		last_area = len(region_image)*len(region_image[1])
 		last_threshold = threshold
+	print "Thresholding Image"
 	if(args.print_threshold):
 		print 'Automatically detected threshold value:'
 		print last_threshold
 else:
+	print "Thresholding Image"
 	ret,new_img = cv2.threshold(img,args.threshold,255,cv2.THRESH_BINARY)
 	labels = measure.label(new_img)
 	max = 0
@@ -94,15 +108,27 @@ else:
 			max = region.area
 			region_label = region.label
 			region_image = region.filled_image
-
 	cv_image = img_as_ubyte(region_image)
 	cv2.imwrite(args.output, cv_image)
-FMT = ''' translate([pixel(%d), pixel(%d), 0]) cube([pixel(%d), pixel(%d), blade_length]);\n'''
+#END THRESHOLDING
+
+#OPENSCAD CONVERSION
+FMT = '''translate([pixel(%d), pixel(%d), 0]) cube([pixel(%d), pixel(%d), blade_length]);\n'''
+SCALE_FACTOR = '''function pixel(i) = mm(i*%.12f); '''
+BLADE_LENGTH = '''blade_length = mm(%f); '''
+BLADE_WIDTH = '''blade_width = pixel(%f); '''
+TIP_STOP = '''translate([0, .5*pixel(%d), -blade_length]) cube([blade_width, .5*pixel(%d), mm(.065)]); '''
+BOW_CONNECTION = ''' cube([pixel(%d), pixel(%d), mm(%f)]); '''
+X_LENGTH = '''x_length = pixel(%f); '''
+Y_LENGTH = '''y_length = pixel(%f); '''
+CONNECTOR_HEIGHT = '''connector_height = pixel(%f); '''
 channels = ''
 length_of_white_segment = 0
 last_black_pixel_x_position = 0
 channel_data = []
 num_elems = 0
+
+print "Determining Keyway Profile"
 if (args.overhangs == False):
 	for y in range(0, len(cv_image)):
 		first_wall_found = False
@@ -116,7 +142,8 @@ if (args.overhangs == False):
 				first_wall_found = True
 			if ((cv_image[y][x] > 127 and x + 1 < len(cv_image[y]) and cv_image[y][x+1] < 127) or
 				(cv_image[y][x] > 127 and x + 1 == len(cv_image[y]))):
-				length_of_white_segment = x - last_black_pixel_x_position	
+				length_of_white_segment = x - last_black_pixel_x_position
+				#length_of_white_segment = round(length_of_white_segment * 3/8)	
 				channel_data.append([last_black_pixel_x_position, y, length_of_white_segment, 1, -1])
 				num_elems += 1
 				if(args.optimize == False):
@@ -130,11 +157,15 @@ if (args.overhangs == True):
 				last_black_pixel_x_position = 0
 			if((cv_image[y][x] > 127 and x + 1 < len(cv_image[y]) and cv_image[y][x+1] < 127) or
 				(cv_image[y][x] > 127 and x + 1 == len(cv_image[y]))):
-				length_of_white_segment = x - last_black_pixel_x_position
+				length_of_white_segment = x - last_black_pixel_x_position 
+				#length_of_white_segment = round(length_of_white_segment * 3/8)
 				channel_data.append([last_black_pixel_x_position, y, length_of_white_segment, 1, -1])
 				num_elems += 1
 				if(args.optimize == False):
 					channels += (FMT % (last_black_pixel_x_position, y, length_of_white_segment, 1, -1))
+
+
+print "Optimizing Keyway Profile"
 if(args.optimize == True):
 	channel_data_classifier = 1
 	for i in range(0, len(channel_data)):
@@ -154,6 +185,8 @@ if(args.optimize == True):
 	last_index = 0
 	first_index = 0
 	first_j = False
+
+	print "Converting Keyway Profile Into OpenSCAD" 
 	for i in range(channel_data_classifier, max_channel):
 		counter = 0
 		first_j = False
@@ -167,4 +200,21 @@ if(args.optimize == True):
 				last_index = j
 				break
 		channels += (FMT % (channel_data[first_index][0], channel_data[first_index][1], channel_data[first_index][2], counter))
-print generic_scad.replace('###CHANNELS###', channels)
+
+print "Creating .scad File"
+generic_scad = generic_scad.replace('###SCALE_FACTOR###', SCALE_FACTOR % (float(args.keyway_height)/float(len(cv_image))))
+generic_scad = generic_scad.replace('###CHANNELS###', channels)
+generic_scad = generic_scad.replace('###BLADE_LENGTH###', BLADE_LENGTH % (args.blade_length))
+generic_scad = generic_scad.replace('###BLADE_WIDTH###', BLADE_WIDTH % (len(cv_image[0]) - 1))
+generic_scad = generic_scad.replace('###TIP_STOP###', TIP_STOP % (len(cv_image) - 1, len(cv_image) - 1))
+generic_scad = generic_scad.replace('###BOW_CONNECTION###', BOW_CONNECTION % (len(cv_image[0]) - 1, len(cv_image) - 1, args.blade_length * .1))
+generic_scad = generic_scad.replace('###X_LENGTH###', X_LENGTH % (len(cv_image[0]) - 1))
+generic_scad = generic_scad.replace('###Y_LENGTH###', Y_LENGTH % (len(cv_image) - 1))
+generic_scad = generic_scad.replace('###CONNECTOR_HEIGHT###', CONNECTOR_HEIGHT % (args.blade_length * .1))
+
+#WRITE SCAD TO DISK
+f = open(args.scad_output_file, 'w')
+f.write(generic_scad)
+f.close()
+
+
