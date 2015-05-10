@@ -1,8 +1,11 @@
 import cv2
 from skimage import measure
 from skimage import img_as_ubyte
+from skimage.transform import rotate
+import exifread
 import argparse
 import sys
+import warnings
 import os.path
 parser = argparse.ArgumentParser(description='3D Key Blank Model Generation Utility.')
 parser.add_argument('input', default = 'input.pgm', 
@@ -66,6 +69,10 @@ f.close()
 #THRESHOLDING
 img = cv2.imread(args.input, 0)
 new_img = cv2.imread(args.input, 0)
+exif = open(args.input, 'rb')
+exif_data = exifread.process_file(exif, details=False)
+exif_orientation = str(exif_data['Image Orientation'])
+exif_orientation_array = exif_orientation.split(" ")
 first_run = True
 last_area = 0
 if(args.threshold == -1):
@@ -88,8 +95,7 @@ if(args.threshold == -1):
 			if(len(region_image)*len(region_image[1]) > 2*last_area or
 				len(region_image)*len(region_image[1]) < last_area/2):
 				break
-		cv_image = img_as_ubyte(region_image)
-		cv2.imwrite(args.output, cv_image)
+		image = region_image
 		last_area = len(region_image)*len(region_image[1])
 		last_threshold = threshold
 	print "Thresholding Image"
@@ -108,9 +114,22 @@ else:
 			max = region.area
 			region_label = region.label
 			region_image = region.filled_image
-	cv_image = img_as_ubyte(region_image)
-	cv2.imwrite(args.output, cv_image)
+	image = region_image
 #END THRESHOLDING
+
+#FIX IMAGE ROTATION AND CONVERT TO OPENCV2 FORMAT
+if(exif_orientation_array[0] == "Rotated"):
+	if(exif_orientation_array[2] == "CCW"):
+		with warnings.catch_warnings():
+			warnings.simplefilter("ignore")
+			image = rotate(image, -int(exif_orientation_array[1]), resize = True)
+	if(exif_orientation_array[2] == "CW"):
+		with warnings.catch_warnings():
+			warnings.simplefilter("ignore")
+			image = rotate(image, int(exif_orientation_array[1]), resize = True)
+cv_image = img_as_ubyte(image)
+cv2.imwrite(args.output, cv_image)
+#END FIX IMAGE ROTATION AND CONVERT TO OPENCV2 FORMAT
 
 #OPENSCAD CONVERSION
 FMT = '''translate([pixel(%d), pixel(%d), 0]) cube([pixel(%d), pixel(%d), blade_length]);\n'''
@@ -127,6 +146,7 @@ length_of_white_segment = 0
 last_black_pixel_x_position = 0
 channel_data = []
 num_elems = 0
+
 
 print "Determining Keyway Profile"
 if (args.overhangs == False):
@@ -216,5 +236,3 @@ generic_scad = generic_scad.replace('###CONNECTOR_HEIGHT###', CONNECTOR_HEIGHT %
 f = open(args.scad_output_file, 'w')
 f.write(generic_scad)
 f.close()
-
-
