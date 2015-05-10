@@ -35,7 +35,6 @@ parser.add_argument('--blade_length', '-bl', default=1.25, type=float,
 parser.add_argument('--scad_output_file', '-sof', default='output.scad',  
 					help='the file to output the OpenSCAD data to (default: output.scad)')
 args = parser.parse_args()
-args.optimize = 1
 #START ARG CHECKING
 if(args.no_arg == False):
 	if((args.threshold > 255) | ((args.threshold < 0) and (args.threshold != -1)) | 
@@ -73,8 +72,8 @@ exif = open(args.input, 'rb')
 exif_data = exifread.process_file(exif, details=False)
 exif_orientation = str(exif_data['Image Orientation'])
 exif_orientation_array = exif_orientation.split(" ")
+
 first_run = True
-last_area = 0
 if(args.threshold == -1):
 	print "Determining Optimal Thresholding Value"
 	for threshold in range(args.min_threshold, args.max_threshold, args.step_size_threshold):
@@ -120,13 +119,9 @@ else:
 #FIX IMAGE ROTATION AND CONVERT TO OPENCV2 FORMAT
 if(exif_orientation_array[0] == "Rotated"):
 	if(exif_orientation_array[2] == "CCW"):
-		with warnings.catch_warnings():
-			warnings.simplefilter("ignore")
-			image = rotate(image, -int(exif_orientation_array[1]), resize = True)
+		image = rotate(image, -int(exif_orientation_array[1]), resize = True)
 	if(exif_orientation_array[2] == "CW"):
-		with warnings.catch_warnings():
-			warnings.simplefilter("ignore")
-			image = rotate(image, int(exif_orientation_array[1]), resize = True)
+		image = rotate(image, int(exif_orientation_array[1]), resize = True)
 cv_image = img_as_ubyte(image)
 cv2.imwrite(args.output, cv_image)
 #END FIX IMAGE ROTATION AND CONVERT TO OPENCV2 FORMAT
@@ -142,11 +137,8 @@ X_LENGTH = '''x_length = pixel(%f); '''
 Y_LENGTH = '''y_length = pixel(%f); '''
 CONNECTOR_HEIGHT = '''connector_height = pixel(%f); '''
 channels = ''
-length_of_white_segment = 0
-last_black_pixel_x_position = 0
 channel_data = []
 num_elems = 0
-
 
 print "Determining Keyway Profile"
 if (args.overhangs == False):
@@ -163,11 +155,8 @@ if (args.overhangs == False):
 			if ((cv_image[y][x] > 127 and x + 1 < len(cv_image[y]) and cv_image[y][x+1] < 127) or
 				(cv_image[y][x] > 127 and x + 1 == len(cv_image[y]))):
 				length_of_white_segment = x - last_black_pixel_x_position
-				#length_of_white_segment = round(length_of_white_segment * 3/8)	
 				channel_data.append([last_black_pixel_x_position, y, length_of_white_segment, 1, -1])
 				num_elems += 1
-				if(args.optimize == False):
-					channels += (FMT % (last_black_pixel_x_position, y, length_of_white_segment, 1, -1))
 if (args.overhangs == True):
 	for y in range(0, len(cv_image)):
 		for x in range(0, len(cv_image[y])):
@@ -178,48 +167,43 @@ if (args.overhangs == True):
 			if((cv_image[y][x] > 127 and x + 1 < len(cv_image[y]) and cv_image[y][x+1] < 127) or
 				(cv_image[y][x] > 127 and x + 1 == len(cv_image[y]))):
 				length_of_white_segment = x - last_black_pixel_x_position 
-				#length_of_white_segment = round(length_of_white_segment * 3/8)
 				channel_data.append([last_black_pixel_x_position, y, length_of_white_segment, 1, -1])
 				num_elems += 1
-				if(args.optimize == False):
-					channels += (FMT % (last_black_pixel_x_position, y, length_of_white_segment, 1, -1))
-
 
 print "Optimizing Keyway Profile"
-if(args.optimize == True):
-	channel_data_classifier = 1
-	for i in range(0, len(channel_data)):
-		if(i - 1 >= 0):	
-			if((channel_data[i-1][0] == channel_data[i][0]) and
-				channel_data[i-1][2] == channel_data[i][2]):
-				channel_data[i][4] = channel_data[i-1][4]
-			else:
-				channel_data[i][4] = channel_data_classifier
-				channel_data_classifier += 1
+channel_data_classifier = 1
+for i in range(0, len(channel_data)):
+	if(i - 1 >= 0):	
+		if((channel_data[i-1][0] == channel_data[i][0]) and
+			channel_data[i-1][2] == channel_data[i][2]):
+			channel_data[i][4] = channel_data[i-1][4]
 		else:
 			channel_data[i][4] = channel_data_classifier
 			channel_data_classifier += 1
-	max_channel = channel_data_classifier
-	channel_data_classifier = 1
-	data_stor = [0, 0, 0, 0]
-	last_index = 0
-	first_index = 0
-	first_j = False
+	else:
+		channel_data[i][4] = channel_data_classifier
+		channel_data_classifier += 1
+max_channel = channel_data_classifier
+channel_data_classifier = 1
+data_stor = [0, 0, 0, 0]
+last_index = 0
+first_index = 0
+first_j = False
 
-	print "Converting Keyway Profile Into OpenSCAD" 
-	for i in range(channel_data_classifier, max_channel):
-		counter = 0
-		first_j = False
-		for j in range(last_index, len(channel_data)):
-			if(channel_data[j][4] == i):
-				if(first_j == False):
-					first_index = j
-					first_j = True
-				counter += 1
-			else:
-				last_index = j
-				break
-		channels += (FMT % (channel_data[first_index][0], channel_data[first_index][1], channel_data[first_index][2], counter))
+print "Converting Keyway Profile Into OpenSCAD" 
+for i in range(channel_data_classifier, max_channel):
+	counter = 0
+	first_j = False
+	for j in range(last_index, len(channel_data)):
+		if(channel_data[j][4] == i):
+			if(first_j == False):
+				first_index = j
+				first_j = True
+			counter += 1
+		else:
+			last_index = j
+			break
+	channels += (FMT % (channel_data[first_index][0], channel_data[first_index][1], channel_data[first_index][2], counter))
 
 print "Creating .scad File"
 generic_scad = generic_scad.replace('###SCALE_FACTOR###', SCALE_FACTOR % (float(args.keyway_height)/float(len(cv_image))))
