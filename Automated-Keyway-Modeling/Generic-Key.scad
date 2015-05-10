@@ -48,9 +48,9 @@ module bow_smooth(x_length, y_length)
 {
     difference()
     {
-        rotate([0, 90, 0]) cylinder(h = x_length*2, r = y_length/2);
-        rotate([0, 90, 0]) cylinder(h = x_length*2, r = 3*y_length/8);
-        translate([0, -y_length/2, -y_length/2]) cube([x_length, y_length/2, y_length]);
+        rotate([0, 90, 0]) cylinder(h = x_length*3, r = y_length/2);
+        rotate([0, 90, 0]) cylinder(h = x_length*3, r = 3*y_length/8);
+        translate([-x_length/2, -y_length/2, -y_length/2]) cube([4*x_length, y_length/2, y_length]);
     }
 }
 
@@ -68,20 +68,20 @@ module bow()
             difference()
             {
                 translate([0, y_length/2, connector_height + 3*y_length/2]) rotate([0, 90, 0]) cylinder(h = x_length, r = y_length/2);
-                translate([0, y_length/2, connector_height + 3*y_length/2]) rotate([0, 90, 0]) cylinder(h = x_length, r = y_length/2-y_length/4);
+                translate([-x_length/4, y_length/2, connector_height + 3*y_length/2]) rotate([0, 90, 0]) cylinder(h = 3*x_length/2, r = y_length/2-y_length/4);
             }
         }
-        translate([0, -y_length/2, connector_height]) rotate([0, 90, 0]) 
-            cylinder(h = x_length, r = y_length/2);
-        translate([0, 3*y_length/2, connector_height]) rotate([0, 90, 0]) 
-            cylinder(h = x_length, r = y_length/2);
-        translate([0, -y_length/2, connector_height + 3*y_length/2]) 
-            rotate([0, 90, 0]) cylinder(h = x_length, r = y_length/2);
-        translate([0, 3*y_length/2, connector_height+ 3*y_length/2]) 
-            rotate([0, 90, 0]) cylinder(h = x_length, r = y_length/2);
-        translate([0, 3*y_length/2 - 3*y_length/8, connector_height + 3*y_length/4]) 
+        translate([-x_length/4, -y_length/2, connector_height]) rotate([0, 90, 0]) 
+            cylinder(h = 3*x_length/2, r = y_length/2);
+        translate([-x_length/4, 3*y_length/2, connector_height]) rotate([0, 90, 0]) 
+            cylinder(h = 3*x_length/2, r = y_length/2);
+        translate([-x_length/4, -y_length/2, connector_height + 3*y_length/2]) 
+            rotate([0, 90, 0]) cylinder(h = 3*x_length/2, r = y_length/2);
+        translate([-x_length/4, 3*y_length/2, connector_height+ 3*y_length/2]) 
+            rotate([0, 90, 0]) cylinder(h = 3*x_length/2, r = y_length/2);
+        translate([-x_length/4, 3*y_length/2 - 3*y_length/8, connector_height + 3*y_length/4]) 
             bow_smooth(x_length, y_length);
-        translate([x_length, -y_length/8, connector_height + 3*y_length/4])
+        translate([5*x_length/4, -y_length/8, connector_height + 3*y_length/4])
             rotate([0, 0, 180]) bow_smooth(x_length, y_length);
     }      
 }
