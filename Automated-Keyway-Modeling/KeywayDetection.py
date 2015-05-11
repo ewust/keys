@@ -1,13 +1,12 @@
+import argparse
 import cv2
+import exifread
+import os.path
+import subprocess
+import sys
 from skimage import measure
 from skimage import img_as_ubyte
 from skimage.transform import rotate
-import subprocess
-import exifread
-import argparse
-import sys
-import warnings
-import os.path
 parser = argparse.ArgumentParser(description='3D Key Blank Model Generation Utility.')
 parser.add_argument('input', default = 'input.pgm', 
 					help='the file to read from (default: input.pgm)')
@@ -25,7 +24,7 @@ parser.add_argument('--print_threshold', '-pt', default=False, type=bool,
 					help='print the automatically selected threshold value (default: False)')
 parser.add_argument('--overhangs', '-oh', default=1, type=int, 
 					help='set if the image has overhangs (default: True)')
-parser.add_argument('--generic_scad', '-gs', default='generic-key.scad', 
+parser.add_argument('--generic_scad', '-gs', default='Generic-Key.scad', 
 					help='set the location of the generic-key.scad file (default: ./generic-key.scad)')
 parser.add_argument('--no_arg', '-na', default=False, type=bool, 
 					help='disable argument checking (default: False)')
@@ -37,7 +36,10 @@ parser.add_argument('--scad_output_file', '-sof', default='output.scad',
 					help='the file to output the OpenSCAD data to (default: output.scad)')
 parser.add_argument('--key_cuts', '-kc', nargs='+', default=['0', '0', '0', '0', '0', '0', '0'],  
 					help='the cuts to place on the key (default: 0 0 0 0 0 0 0)')
-
+parser.add_argument('--output_stl', '-os', default='output.stl',  
+					help='the file to render to (default: output.stl)')
+parser.add_argument('--disable_stl_output', '-dso', default=False,  
+					help='disable the automatic rendering of the OpenSCAD data (default: False)')
 args = parser.parse_args()
 #START ARG CHECKING
 if(args.no_arg == False):
@@ -228,5 +230,8 @@ f = open(args.scad_output_file, 'w')
 f.write(generic_scad)
 f.close()
 
-#if(args.generate_stl == True):
-#	print subprocess.Popen("echo Hello World", shell=True, stdout=subprocess.PIPE).stdout.read()
+#RENDER SCAD
+if(args.disable_stl_output == False):
+	print "Rendering .stl File (This Will Take Awhile)"
+	OPENSCAD_CALL = '''openscad -o %s %s 2>OpenSCAD_output.log 1>OpenSCAD_output.log'''
+	subprocess.Popen(OPENSCAD_CALL % (args.output_stl, args.scad_output_file), shell=True, stdout=subprocess.PIPE).stdout.read()
