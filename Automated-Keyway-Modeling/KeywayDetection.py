@@ -2,6 +2,7 @@ import cv2
 from skimage import measure
 from skimage import img_as_ubyte
 from skimage.transform import rotate
+import subprocess
 import exifread
 import argparse
 import sys
@@ -33,6 +34,8 @@ parser.add_argument('--keyway_height', '-kh', default=.320, type=float,
 parser.add_argument('--blade_length', '-bl', default=1.25, type=float, 
 					help='set the length of the key blade in inches (default: 1.25")')
 parser.add_argument('--scad_output_file', '-sof', default='output.scad',  
+					help='the file to output the OpenSCAD data to (default: output.scad)')
+parser.add_argument('--key_cuts', '-kc', nargs='+', default=['0', '0', '0', '0', '0', '0', '0'],  
 					help='the file to output the OpenSCAD data to (default: output.scad)')
 args = parser.parse_args()
 #START ARG CHECKING
@@ -127,11 +130,12 @@ cv2.imwrite(args.output, cv_image)
 #END FIX IMAGE ROTATION AND CONVERT TO OPENCV2 FORMAT
 
 #OPENSCAD CONVERSION
+#LENGTH ARE SOMETIMES OVERALLOCATED FOR CUT AWAYS TO PREVENT ARTIFACTS FROM RENDERING PROBLEMS 
 FMT = '''translate([pixel(%d), pixel(%d), 0]) cube([pixel(%d), pixel(%d), blade_length]);\n'''
 SCALE_FACTOR = '''function pixel(i) = mm(i*%.12f); '''
 BLADE_LENGTH = '''blade_length = mm(%f); '''
 BLADE_WIDTH = '''blade_width = pixel(%f); '''
-TIP_STOP = '''translate([0, .5*pixel(%d), -blade_length]) cube([blade_width, .5*pixel(%d), mm(.065)]); '''
+TIP_STOP = '''translate([-blade_width/4, .5*pixel(%d), -blade_length - mm(.0001)]) cube([3*blade_width/2, .6*pixel(%d), mm(.065)]); '''
 BOW_CONNECTION = ''' cube([pixel(%d), pixel(%d), mm(%f)]); '''
 X_LENGTH = '''x_length = pixel(%f); '''
 Y_LENGTH = '''y_length = pixel(%f); '''
@@ -208,15 +212,20 @@ for i in range(channel_data_classifier, max_channel):
 print "Creating .scad File"
 generic_scad = generic_scad.replace('###SCALE_FACTOR###', SCALE_FACTOR % (float(args.keyway_height)/float(len(cv_image))))
 generic_scad = generic_scad.replace('###CHANNELS###', channels)
-generic_scad = generic_scad.replace('###BLADE_LENGTH###', BLADE_LENGTH % (args.blade_length))
+generic_scad = generic_scad.replace('###BLADE_LENGTH###', BLADE_LENGTH % (args.blade_length - (7 - len(args.key_cuts))*.15))
 generic_scad = generic_scad.replace('###BLADE_WIDTH###', BLADE_WIDTH % (len(cv_image[0]) - 1))
 generic_scad = generic_scad.replace('###TIP_STOP###', TIP_STOP % (len(cv_image) - 1, len(cv_image) - 1))
 generic_scad = generic_scad.replace('###BOW_CONNECTION###', BOW_CONNECTION % (len(cv_image[0]) - 1, len(cv_image) - 1, args.blade_length * .1))
+generic_scad = generic_scad.replace('###NUMBER_OF_CUTS###', str(len(args.key_cuts) - 1))
 generic_scad = generic_scad.replace('###X_LENGTH###', X_LENGTH % (len(cv_image[0]) - 1))
 generic_scad = generic_scad.replace('###Y_LENGTH###', Y_LENGTH % (len(cv_image) - 1))
 generic_scad = generic_scad.replace('###CONNECTOR_HEIGHT###', CONNECTOR_HEIGHT % (args.blade_length * .1))
+generic_scad = generic_scad.replace('###KEY_CUTS###', str(args.key_cuts).replace("'", ""))
 
 #WRITE SCAD TO DISK
 f = open(args.scad_output_file, 'w')
 f.write(generic_scad)
 f.close()
+
+#if(args.generate_stl == True):
+#	print subprocess.Popen("echo Hello World", shell=True, stdout=subprocess.PIPE).stdout.read()
