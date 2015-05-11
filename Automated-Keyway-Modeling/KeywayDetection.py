@@ -8,7 +8,6 @@ import argparse
 import sys
 import warnings
 import os.path
-
 parser = argparse.ArgumentParser(description='3D Key Blank Model Generation Utility.')
 parser.add_argument('input', default = 'input.pgm', 
 					help='the file to read from (default: input.pgm)')
@@ -37,7 +36,8 @@ parser.add_argument('--blade_length', '-bl', default=1.25, type=float,
 parser.add_argument('--scad_output_file', '-sof', default='output.scad',  
 					help='the file to output the OpenSCAD data to (default: output.scad)')
 parser.add_argument('--key_cuts', '-kc', nargs='+', default=['0', '0', '0', '0', '0', '0', '0'],  
-					help='the file to output the OpenSCAD data to (default: output.scad)')
+					help='the cuts to place on the key (default: 0 0 0 0 0 0 0)')
+
 args = parser.parse_args()
 #START ARG CHECKING
 if(args.no_arg == False):
