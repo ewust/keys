@@ -1,4 +1,3 @@
-
 $fn=100;
 
 function mm(i) = i*25.4;
@@ -36,7 +35,7 @@ module blade(key_cuts)
         //Cut Tip Stop
         ###TIP_STOP###
         //Place cuts on the key 
-        for (counter = [0:6])
+        for (counter = [0:###NUMBER_OF_CUTS###])
         {
             translate([0, 0, -shoulder - (counter * cut_spacing)]) 
                 bit(key_cuts[counter], blade_width);
@@ -95,4 +94,4 @@ module key(key_cuts)
     }
 }
 
-key([3, 8, 5, 9, 8, 6, 5]);
+key(###KEY_CUTS###);
