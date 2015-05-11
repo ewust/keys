@@ -8,6 +8,7 @@ import argparse
 import sys
 import warnings
 import os.path
+
 parser = argparse.ArgumentParser(description='3D Key Blank Model Generation Utility.')
 parser.add_argument('input', default = 'input.pgm', 
 					help='the file to read from (default: input.pgm)')
