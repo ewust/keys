@@ -40,6 +40,8 @@ parser.add_argument('--output_stl', '-os', default='output.stl',
 					help='the file to render to (default: output.stl)')
 parser.add_argument('--disable_stl_output', '-dso', default=False,  
 					help='disable the automatic rendering of the OpenSCAD data (default: False)')
+parser.add_argument('--scale_factor', '-sf', default=.8, type=int,
+					help='scale stuff (default: False)')
 args = parser.parse_args()
 #START ARG CHECKING
 if(args.no_arg == False):
@@ -227,7 +229,7 @@ for i in range(channel_data_classifier, max_channel):
 		else:
 			last_index = j
 			break
-	channels += (FMT % (channel_data[first_index][0], channel_data[first_index][1], channel_data[first_index][2]- 25, counter))
+	channels += (FMT % (channel_data[first_index][0] + (1-args.scale_factor) * channel_data[first_index][2], channel_data[first_index][1], channel_data[first_index][2] * args.scale_factor, counter))
 
 print "Creating .scad File"
 generic_scad = generic_scad.replace('###SCALE_FACTOR###', SCALE_FACTOR % (float(args.keyway_height)/float(len(cv_image))))
@@ -251,4 +253,4 @@ f.close()
 if(args.disable_stl_output == False):
 	print "Rendering .stl File (This Will Take Awhile)"
 	OPENSCAD_CALL = '''openscad -o %s %s 2>OpenSCAD_output.log 1>OpenSCAD_output.log'''
-	subprocess.Popen(OPENSCAD_CALL % (args.output_stl, args.scad_output_file), shell=True, stdout=subprocess.PIPE).stdout.read()	
+	subprocess.Popen(OPENSCAD_CALL % (args.output_stl, args.scad_output_file), shell=True, stdout=subprocess.PIPE).stdout.read()
