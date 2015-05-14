@@ -78,7 +78,8 @@ exif = open(args.input, 'rb')
 exif_data = exifread.process_file(exif, details=False)
 exif_orientation = str(exif_data['Image Orientation'])
 exif_orientation_array = exif_orientation.split(" ")
-
+threshold_array = []
+area_array = []
 first_run = True
 if(args.threshold == -1):
 	print "Determining Optimal Thresholding Value"
@@ -88,20 +89,32 @@ if(args.threshold == -1):
 		max = 0
 		region_label = -1
 		region_image = []
+		avg = 0
 		for region in measure.regionprops(labels, intensity_image=None, cache=True):
 			if region.area > max:
 				max = region.area
 				region_label = region.label
 				region_image = region.filled_image
+		counter = 0
+		for i in range(0, int(.15*len(region_image))):
+			avg += len(region_image[i])
+			counter += 1
+		if counter != 0:
+			avg = avg/counter
 		if(first_run):
 			last_area = len(region_image)*len(region_image[1])
 			first_run = False
 		else:
 			if(len(region_image)*len(region_image[1]) > 2*last_area or
-				len(region_image)*len(region_image[1]) < last_area/2):
+				len(region_image)*len(region_image[1]) < last_area/2 or
+					avg > 1.15 * last_avg):
 				break
+		counter = 0	
 		image = region_image
+		threshold_array.append(threshold)
+		last_avg = avg
 		last_area = len(region_image)*len(region_image[1])
+		area_array.append(last_area)
 		last_threshold = threshold
 	print "Thresholding Image"
 	if(args.print_threshold):
@@ -121,6 +134,9 @@ else:
 			region_image = region.filled_image
 	image = region_image
 #END THRESHOLDING
+#for i in range(0, len(area_array)):
+	#print "%s %.23f" % (threshold_array[i], float(area_array[i])/(float(len(new_img)*len(new_img[1]))))
+
 
 #FIX IMAGE ROTATION AND CONVERT TO OPENCV2 FORMAT
 if(exif_orientation_array[0] == "Rotated"):
@@ -177,6 +193,7 @@ if (args.overhangs == True):
 				channel_data.append([last_black_pixel_x_position, y, length_of_white_segment, 1, -1])
 				num_elems += 1
 
+
 print "Optimizing Keyway Profile"
 channel_data_classifier = 1
 for i in range(0, len(channel_data)):
@@ -210,7 +227,7 @@ for i in range(channel_data_classifier, max_channel):
 		else:
 			last_index = j
 			break
-	channels += (FMT % (channel_data[first_index][0], channel_data[first_index][1], channel_data[first_index][2], counter))
+	channels += (FMT % (channel_data[first_index][0], channel_data[first_index][1], channel_data[first_index][2]- 25, counter))
 
 print "Creating .scad File"
 generic_scad = generic_scad.replace('###SCALE_FACTOR###', SCALE_FACTOR % (float(args.keyway_height)/float(len(cv_image))))
@@ -234,4 +251,4 @@ f.close()
 if(args.disable_stl_output == False):
 	print "Rendering .stl File (This Will Take Awhile)"
 	OPENSCAD_CALL = '''openscad -o %s %s 2>OpenSCAD_output.log 1>OpenSCAD_output.log'''
-	subprocess.Popen(OPENSCAD_CALL % (args.output_stl, args.scad_output_file), shell=True, stdout=subprocess.PIPE).stdout.read()
+	subprocess.Popen(OPENSCAD_CALL % (args.output_stl, args.scad_output_file), shell=True, stdout=subprocess.PIPE).stdout.read()	
