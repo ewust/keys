@@ -40,7 +40,7 @@ parser.add_argument('--output_stl', '-os', default='output.stl',
 					help='the file to render to (default: output.stl)')
 parser.add_argument('--disable_stl_output', '-dso', default=False,  
 					help='disable the automatic rendering of the OpenSCAD data (default: False)')
-parser.add_argument('--scale_factor', '-sf', default=.8, type=int,
+parser.add_argument('--trim', '-tr', default=10, type=int,
 					help='scale stuff (default: False)')
 args = parser.parse_args()
 #START ARG CHECKING
@@ -229,7 +229,7 @@ for i in range(channel_data_classifier, max_channel):
 		else:
 			last_index = j
 			break
-	channels += (FMT % (channel_data[first_index][0] + (1-args.scale_factor) * channel_data[first_index][2], channel_data[first_index][1], channel_data[first_index][2] * args.scale_factor, counter))
+	channels += (FMT % (channel_data[first_index][0] + args.trim, channel_data[first_index][1], channel_data[first_index][2] - args.trim*2, counter))
 
 print "Creating .scad File"
 generic_scad = generic_scad.replace('###SCALE_FACTOR###', SCALE_FACTOR % (float(args.keyway_height)/float(len(cv_image))))
