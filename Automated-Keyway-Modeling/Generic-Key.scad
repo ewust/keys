@@ -43,54 +43,53 @@ module blade(key_cuts)
     }  
 }
 
-module bow_smooth(x_length, y_length)
+module bow_edges(bow_height, inner_radius, outer_radius, amount_show)
 {
-    difference()
+    outer_radius = 2*outer_radius;
+    translate([inner_radius, 0, 0]) difference()
     {
-        rotate([0, 90, 0]) cylinder(h = x_length*3, r = y_length/2);
-        rotate([0, 90, 0]) cylinder(h = x_length*3, r = 3*y_length/8);
-        translate([-x_length/2, -y_length/2, -y_length/2]) cube([4*x_length, y_length/2, y_length]);
+        cylinder(h = 2*bow_height, r = outer_radius);
+        cylinder(h = 2*bow_height, r = inner_radius);
+        translate([-inner_radius + amount_show, -outer_radius, 0]) cube([2*outer_radius, 2*outer_radius, 2*bow_height]);
     }
+    
 }
 
-module bow()
+module bow(input_x_len, input_y_len)
 {
-    ###X_LENGTH###
-    ###Y_LENGTH###
-    ###CONNECTOR_HEIGHT###
+    bow_height = input_y_len;
+    bow_x_length = input_x_len * 2.808888889;
+    bow_y_length = input_x_len * 2.891851852;
     difference()
     {
-        union()
+        cube([bow_x_length, bow_y_length, bow_height]);
+        cylinder(h = bow_height, r = bow_x_length/2 - input_x_len/2);
+        translate([bow_x_length, 0, 0]) cylinder(h = bow_height, r = bow_x_length/2 - input_x_len/2);
+        translate([0, .925 * bow_y_length, 0]) cylinder(h = bow_height, r = bow_x_length/2 - input_x_len/2);
+        translate([bow_x_length, .925 * bow_y_length, 0]) cylinder(h = bow_height, r = bow_x_length/2 - input_x_len/2);
+        translate([0, 0.4615 * bow_y_length, 0]) 
+        bow_edges(bow_height, 0.173442623 * bow_y_length, 0.192110656 * bow_y_length, 0.074367089 * bow_x_length);
+        translate([bow_x_length, 0.4615 * bow_y_length, 3*bow_height/2]) 
+        rotate([0, 180, 0]) bow_edges(bow_height, 0.173442623 * bow_y_length, 0.192110656 * bow_y_length, 0.074367089 * bow_x_length);
+        translate([bow_x_length/2, bow_y_length - .1*bow_y_length, 0]) 
+        rotate([0, 0, 270]) bow_edges(bow_height, bow_y_length - 8*(.074367089 * bow_x_length),  bow_y_length - 2*(.074367089 * bow_x_length), 0.074367089 * bow_x_length);
+        translate([-.006*bow_x_length, .65*bow_y_length, 0]) difference()
         {
-            translate([0, -y_length/2, connector_height]) cube([x_length, 2*y_length, 3*y_length/2]); 
-             cube([x_length, y_length, connector_height]); 
-            difference()
-            {
-                translate([0, y_length/2, connector_height + 3*y_length/2]) rotate([0, 90, 0]) cylinder(h = x_length, r = y_length/2);
-                translate([-x_length/4, y_length/2, connector_height + 3*y_length/2]) rotate([0, 90, 0]) cylinder(h = 3*x_length/2, r = y_length/2-y_length/4);
-            }
+            translate([bow_x_length/2 - input_x_len/2, 0, 0]) cube([input_x_len, .15*bow_y_length, bow_height]);
+            rotate([0, 0, -15]) cube([bow_x_length/2 - input_x_len/2, .3*bow_y_length, bow_height]);
+            translate([bow_x_length/2 + input_x_len/2 + cos(15) * .3*bow_y_length, sin(15) * .3*bow_y_length, 0]) rotate([0, 0, +105]) cube([bow_x_length/2 + input_x_len/2, .3*bow_y_length, bow_height]);
         }
-        translate([-x_length/4, -y_length/2, connector_height]) rotate([0, 90, 0]) 
-            cylinder(h = 3*x_length/2, r = y_length/2);
-        translate([-x_length/4, 3*y_length/2, connector_height]) rotate([0, 90, 0]) 
-            cylinder(h = 3*x_length/2, r = y_length/2);
-        translate([-x_length/4, -y_length/2, connector_height + 3*y_length/2]) 
-            rotate([0, 90, 0]) cylinder(h = 3*x_length/2, r = y_length/2);
-        translate([-x_length/4, 3*y_length/2, connector_height+ 3*y_length/2]) 
-            rotate([0, 90, 0]) cylinder(h = 3*x_length/2, r = y_length/2);
-        translate([-x_length/4, 3*y_length/2 - 3*y_length/8, connector_height + 3*y_length/4]) 
-            bow_smooth(x_length, y_length);
-        translate([5*x_length/4, -y_length/8, connector_height + 3*y_length/4])
-            rotate([0, 0, 180]) bow_smooth(x_length, y_length);
-    }      
+    }
 }
 
 module key(key_cuts)
 {
+    ###X_LENGTH###
+    ###Y_LENGTH###
     union()
     {
         blade(key_cuts);
-        bow();
+        translate([0, -((y_length*2.808888889)/2 - y_length/2), 0]) rotate([90, 0, 90]) bow(y_length, x_length);
     }
 }
 
