@@ -78,7 +78,12 @@ img = cv2.imread(args.input, 0)
 new_img = cv2.imread(args.input, 0)
 exif = open(args.input, 'rb')
 exif_data = exifread.process_file(exif, details=False)
-exif_orientation = str(exif_data['Image Orientation'])
+try:
+        exif_orientation = str(exif_data['Image Orientation'])
+except KeyError, e:
+#       print "EXIF DATA: NOT FOUND"
+        exif_orientation = str("NotRotated A")
+#print "EXIF DATA: FOUND"
 exif_orientation_array = exif_orientation.split(" ")
 threshold_array = []
 area_array = []
