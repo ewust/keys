@@ -177,11 +177,11 @@ cv2.imwrite(args.output, cv_image)
 
 #OPENSCAD CONVERSION
 #LENGTH ARE SOMETIMES OVERALLOCATED FOR CUT AWAYS TO PREVENT ARTIFACTS FROM RENDERING PROBLEMS 
-FMT = '''translate([pixel(%d), pixel(%d), 0]) cube([pixel(%d), pixel(%d), blade_length]);\n'''
-SCALE_FACTOR = '''function pixel(i) = mm(i*%.12f); '''
+FMT = '''\tcube({size: [pixel(%d), pixel(%d), blade_length]}).translate([pixel(%d), pixel(%d), 0]),\n'''
+SCALE_FACTOR = '''%.12f'''
 BLADE_LENGTH = '''blade_length = mm(%f); '''
 BLADE_WIDTH = '''blade_width = pixel(%f); '''
-TIP_STOP = '''translate([-blade_width/4, .5*pixel(%d), -blade_length - mm(.0001)]) cube([3*blade_width/2, .6*pixel(%d), mm(.065)]); '''
+TIP_STOP = '''cube([3*blade_width/2, 0.6*pixel(%d), mm(0.065)]).translate([-blade_width/4, .5*pixel(%d), -blade_length - mm(0.0001)]),'''
 BOW_CONNECTION = ''' cube([pixel(%d), pixel(%d), mm(%f)]); '''
 X_LENGTH = '''x_length = pixel(%f); '''
 Y_LENGTH = '''y_length = pixel(%f); '''
@@ -254,7 +254,7 @@ for i in range(channel_data_classifier, max_channel):
 		else:
 			last_index = j
 			break
-	channels += (FMT % (channel_data[first_index][0] + args.trim, channel_data[first_index][1], channel_data[first_index][2] - args.trim*2, counter))
+	channels += (FMT % (channel_data[first_index][2] - args.trim*2, counter, channel_data[first_index][0] + args.trim, channel_data[first_index][1]))
 
 print "Creating .scad File"
 generic_scad = generic_scad.replace('###SCALE_FACTOR###', SCALE_FACTOR % (float(args.keyway_height)/float(len(cv_image))))
