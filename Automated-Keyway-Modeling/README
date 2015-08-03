@@ -1,9 +1,16 @@
 
+
+Dependencies
+---
 sudo apt-get install python-numpy python-scipy python-matplotlib ipython ipython-notebook python-pandas python-sympy python-nose
 sudo pip install exifread
 sudo pip install scikit-image
 
 
 
+Running the tool
+---
+E.g. generate a bump key:
 
+python KeywayDetection.py ./sample-lock.jpg -kc 9 9 9 9 9 9 9
 
